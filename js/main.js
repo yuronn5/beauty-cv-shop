@@ -222,26 +222,31 @@ preloader
         }
     });
     function submitForm(){
-        // Initiate Variables With Form Content
-        var name = $("#name").val();
-        var email = $("#email").val();
-        var msg_subject = $("#msg_subject").val();
-        var message = $("#message").val();
+
+
+        const payload = {
+            name: $("#name").val(),
+            email: $("#email").val(),
+            msg_subject: $("#msg_subject").val(),
+            message: $("#message").val()
+        };
 
 
         $.ajax({
-            type: "POST",
-            url: "assets/contact.php",
-            data: "name=" + name + "&email=" + email + "&msg_subject=" + msg_subject + "&message=" + message,
-            success : function(text){
-                if (text == "success"){
-                    formSuccess();
-                } else {
-                    formError();
-                    submitMSG(false,text);
-                }
+            url: "/.netlify/functions/contact",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(payload),
+            success: function(resp) {
+            // server returns "success" or an error message
+            alert(resp);
+            // optionally clear the form:
+            $("#contactForm")[0].reset();
+            },
+            error: function(xhr) {
+            alert(xhr.responseText || "Error sending message");
             }
-        });
+  });
     }
 
     function formSuccess(){
