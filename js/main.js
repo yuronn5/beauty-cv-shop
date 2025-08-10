@@ -244,6 +244,9 @@ preloader
                     formError();
                     submitMSG(false,text);
                 }
+            },
+            error: function(xhr) {
+                console.log(xhr);
             }
   });
     }
