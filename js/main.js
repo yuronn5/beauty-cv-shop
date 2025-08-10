@@ -237,14 +237,13 @@ preloader
             method: "POST",
             contentType: "application/json",
             data: JSON.stringify(payload),
-            success: function(resp) {
-            // server returns "success" or an error message
-            alert(resp);
-            // optionally clear the form:
-            $("#contactForm")[0].reset();
-            },
-            error: function(xhr) {
-            alert(xhr.responseText || "Error sending message");
+            success : function(text){
+                if (text == "success"){
+                    formSuccess();
+                } else {
+                    formError();
+                    submitMSG(false,text);
+                }
             }
   });
     }
