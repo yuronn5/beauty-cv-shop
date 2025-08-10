@@ -233,7 +233,7 @@ preloader
 
 
         $.ajax({
-            url: "/.netlify/functions/contact",
+            url: "/netlify/functions/contact",
             method: "POST",
             contentType: "application/json",
             data: JSON.stringify(payload),
