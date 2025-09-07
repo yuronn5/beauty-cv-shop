@@ -301,10 +301,10 @@
     });
 
     // заміни свій обробник на цей
-bookBtn.addEventListener('click', onBookClick);
+bookBtn.removeEventListener?.('click', onBookClick); // якщо попередньо прив’язували
+bookBtn.addEventListener('click', onBookClickAutoClose);
 
-async function onBookClick() {
-  // адмін-кнопка просто закриває модалку
+async function onBookClickAutoClose() {
   if (adminToggle.checked) { closeModal(); return; }
 
   if (!selectedTime) { alert('Оберіть старт часу'); return; }
@@ -312,35 +312,40 @@ async function onBookClick() {
   const phone = (phoneInput.value || '').trim();
   if (!name || !phone) { alert('Вкажіть ім’я та телефон'); return; }
 
-  // захист від дабл-кліку
+  // захист від подвійних кліків
   if (bookBtn.dataset.busy === '1') return;
   bookBtn.dataset.busy = '1';
   const prevLabel = bookBtn.textContent;
   bookBtn.textContent = 'Зберігаю…';
 
+  const bookedTime = selectedTime; // збережемо до оновлень
+
   try {
-    // 1) створюємо бронювання на сервері
-    await api('/book', {
-      method: 'POST',
-      data: { date: activeDateStr, time: selectedTime, name, phone }
+    // 1) створити бронювання
+    await api('/book', { method:'POST', data:{ date: activeDateStr, time: bookedTime, name, phone } });
+
+    // 2) не блокуємо UI: нотифікація у Netlify Forms
+    submitBookingForm({ name, phone, date: activeDateStr, time: bookedTime, duration: '45 хв' }).catch(()=>{});
+
+    // 3) підтягнути свіжу зайнятість (щоб наступне відкриття модалки було вже оновленим)
+    await loadDay(activeDateStr, false).then(day=>{
+      // оновимо локальний стан без показу модалки
+      dayBlocked = Array.from(new Set([
+        ...(day.blocked||[]),
+        ...((day.bookings||[]).flatMap(b => rangeTimes(b.time)))
+      ])).sort((a,b)=>parseTime(a)-parseTime(b));
+      dayBookings = day.bookings || [];
     });
 
-    // 2) відправляємо нотифікацію через Netlify Forms (не блокуємо UI)
-    submitBookingForm({
-      name, phone, date: activeDateStr, time: selectedTime, duration: '45 хв'
-    }).catch(() => { /* ігноруємо помилку форми */ });
+    // 4) закриваємо модалку автоматично
+    closeModal();
 
-    // 3) одразу підтягнути свіжу зайнятість дня і перемалювати слоти
-    await openModal(activeDateStr);        // перефетчить availability і заново відмалює
-    selectedTime = null;                   // скинемо вибір
-    alert(`Запис підтверджено: ${activeDateStr} о ${selectedTime ?? 'обраний час'}`);
-
-    // якщо хочеш автоматично закривати модалку — розкоментуй:
-    // closeModal();
+    // 5) показуємо підтвердження з правильним часом
+    alert(`Запис підтверджено: ${activeDateStr} о ${bookedTime}`);
   } catch (err) {
     if (err.status === 409) {
       alert('Обраний проміжок вже недоступний. Оновлюю список…');
-      await openModal(activeDateStr);      // підтягнемо актуальний стан
+      await openModal(activeDateStr); // покаже актуальний стан
     } else {
       alert('Помилка бронювання. Спробуйте ще раз.');
       console.error(err);
@@ -350,6 +355,7 @@ async function onBookClick() {
     bookBtn.textContent = prevLabel;
   }
 }
+
 
     closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
