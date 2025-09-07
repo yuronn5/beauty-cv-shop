@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
   <title>Календар запису</title>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
   <style>
@@ -152,23 +155,29 @@
 
     // ==== API (Netlify Functions) ====
     const API_BASE = '/.netlify/functions';
-    async function api(path, { method='GET', data=null, admin=false } = {}){
-      const headers = { 'Content-Type':'application/json' };
-      if (admin && ADMIN_KEY) headers['X-Admin-Key'] = ADMIN_KEY;
-      const res = await fetch(`${API_BASE}${path}`, { method, headers, body: data ? JSON.stringify(data) : null });
-      const json = await res.json().catch(()=> ({}));
-      if (!res.ok) throw Object.assign(new Error(json.error || 'API error'), { status: res.status, json });
-      return json;
+   async function api(path, { method='GET', data=null, admin=false } = {}){
+    const headers = { 'Content-Type':'application/json' };
+    if (admin && ADMIN_KEY) headers['X-Admin-Key'] = ADMIN_KEY;
+    const res = await fetch(`${API_BASE}${path}?_=${Date.now()}`, {
+        method,
+        headers,
+        body: data ? JSON.stringify(data) : null,
+        cache: 'no-store'
+    });
+    const json = await res.json().catch(()=> ({}));
+    if (!res.ok) throw Object.assign(new Error(json.error || 'API error'), { status: res.status, json });
+    return json;
     }
     async function loadDay(dateStr, asAdmin=false){
-      const headers = {};
-      if (asAdmin && ADMIN_KEY) headers['X-Admin-Key'] = ADMIN_KEY;
-      const url = new URL(`${API_BASE}/availability`, location.origin);
-      url.searchParams.set('date', dateStr);
-      const res = await fetch(url, { headers });
-      const json = await res.json().catch(()=> ({}));
-      if (!res.ok) throw new Error(json.error || 'availability error');
-      return json;
+    const headers = {};
+    if (asAdmin && ADMIN_KEY) headers['X-Admin-Key'] = ADMIN_KEY;
+    const url = new URL(`${API_BASE}/availability`, location.origin);
+    url.searchParams.set('date', dateStr);
+    url.searchParams.set('_', Date.now().toString()); // cache-bust
+    const res = await fetch(url, { headers, cache: 'no-store' });
+    const json = await res.json().catch(()=> ({}));
+    if (!res.ok) throw new Error(json.error || 'availability error');
+    return json;
     }
 
     // ==== Netlify Forms (для нотифікацій) ====
