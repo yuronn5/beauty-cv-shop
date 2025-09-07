@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Календар запису (15хв крок, 45хв тривалість)</title>
+  <title>Календар запису</title>
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
   <style>
     :root { --card-bg:#fff; --card-shadow:0 8px 30px rgba(0,0,0,.08); --muted:#6b7280; --danger:#ef4444; --primary:#2563eb; }
@@ -12,19 +12,14 @@
     .widget{ width: 420px; background:var(--card-bg); border-radius:18px; box-shadow:var(--card-shadow); padding:16px; overflow:hidden; }
     .header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
     .title{ font-weight:700; font-size:18px; }
-    .controls{ display:flex; gap:12px; align-items:center; color:#6b7280; font-size:13px; }
-    .badge{ display:inline-flex; align-items:center; gap:6px; background:#f3f4f6; color:#111827; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:600; }
-    .badge i{ width:8px; height:8px; border-radius:999px; display:inline-block; }
-    .i-free{ background:#10b981; } .i-block{ background:#ef4444; }
     #calendar{ background:#fff; border-radius:14px; padding:10px; }
-    .fc{ --fc-page-bg-color:#fff; --fc-border-color:#e5e7eb; }
-    .fc .fc-toolbar-title{ font-size:16px; } .fc .fc-button{ border-radius:10px; padding:6px 10px; font-size:12px; }
-    .fc .fc-daygrid-day-number{ font-size:12px; }
+    .admin-toggle{ display:flex; align-items:center; gap:6px; user-select:none; cursor:pointer; margin-top:8px; }
+    .hint{ color:#6b7280; font-size:12px; margin:6px 0 0; }
 
     /* модалка */
     .modal{ position:fixed; inset:0; display:none; place-items:center; background:rgba(17,24,39,.45); z-index:9999; padding:16px; }
     .modal.open{ display:grid; }
-    .sheet{ width:520px; max-width:100%; background:#fff; border-radius:16px; box-shadow:var(--card-shadow); padding:16px; animation:pop .12s ease-out; }
+    .sheet{ width:560px; max-width:100%; background:#fff; border-radius:16px; box-shadow:var(--card-shadow); padding:16px; animation:pop .12s ease-out; }
     @keyframes pop{ from{transform:scale(.98);opacity:.6} to{transform:scale(1);opacity:1} }
     .sheet h3{ margin:0 0 8px; font-size:16px; }
     .sub{ color:#6b7280; font-size:13px; margin-bottom:10px; }
@@ -35,43 +30,38 @@
     .slot.notfit{ opacity:.45; cursor:not-allowed; }
     .slot.selected{ outline:2px solid var(--primary); }
 
-    .form{
-      display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:10px;
-    }
-    .form label{ font-size:12px; color:#374151; font-weight:600; }
-    .form input{
-      margin-top:4px; width:100%; border:1px solid #e5e7eb; border-radius:10px; padding:8px; font-size:13px;
-    }
+    .form{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:10px; }
+    .form label{ font-size:12px; color:#374151; font-weight:600; display:block; }
+    .form input{ margin-top:4px; width:100%; border:1px solid #e5e7eb; border-radius:10px; padding:8px; font-size:13px; }
+
     .bar{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; gap:8px; flex-wrap:wrap; }
     .left{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .right{ display:flex; gap:8px; }
     .btn{ border:1px solid #e5e7eb; background:#fff; padding:8px 12px; border-radius:10px; font-weight:600; cursor:pointer; font-size:13px; }
     .btn.primary{ background:var(--primary); color:#fff; border-color:transparent; }
     .btn.danger{ background:#ef4444; color:#fff; border-color:transparent; }
-    .admin-toggle{ display:flex; align-items:center; gap:6px; user-select:none; cursor:pointer; margin-top:6px; }
-    .hint{ color:#6b7280; font-size:12px; margin-top:4px; }
+
+    .admin-list{ margin-top:10px; border-top:1px dashed #e5e7eb; padding-top:10px; }
+    .admin-list h4{ margin:0 0 6px; font-size:13px; color:#111827; }
+    .admin-list .row{ font-size:12px; color:#374151; display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
   </style>
 </head>
 <body>
   <div class="widget">
     <div class="header">
       <div class="title">Запис до майстра</div>
-      <div class="controls">
-        <span class="badge"><i class="i-free"></i>вільно</span>
-        <span class="badge"><i class="i-block"></i>заблок.</span>
-      </div>
     </div>
 
     <label class="admin-toggle">
       <input type="checkbox" id="adminMode" />
       <strong>Адмін-режим</strong>
     </label>
-    <div class="hint">Клік по дню → обери старт. Бронювання блокує <b>45 хв</b> (внутрішній крок 15 хв). В адмін-режимі можна блокувати/розблоковувати.</div>
+    <div class="hint">Клікни по дню → обери старт. Бронювання блокує <b>45 хв</b> (внутрішній крок 15 хв). У місячній сітці індикаторів немає — зайнятість видно в модалці.</div>
 
     <div id="calendar"></div>
   </div>
 
-  <!-- СХОВАНА ФОРМА ДЛЯ NETLIFY (щоб Netlify розпізнав форму на білді) -->
+  <!-- Схована форма для Netlify Forms (для нотифікацій) -->
   <form name="booking" data-netlify="true" netlify-honeypot="bot-field" hidden>
     <input type="hidden" name="form-name" value="booking" />
     <input type="text" name="name" />
@@ -82,6 +72,7 @@
     <input type="text" name="bot-field" />
   </form>
 
+  <!-- Модалка -->
   <div class="modal" id="modal">
     <div class="sheet">
       <h3 id="modalDateTitle">Вибір часу</h3>
@@ -89,25 +80,31 @@
 
       <div class="slots" id="slots"></div>
 
-      <!-- Форма бронювання для користувача -->
-      <div class="form">
+      <!-- Форма бронювання для клієнта -->
+      <div class="form" id="clientForm">
         <div>
           <label>Ім’я
-            <input id="nameInput" type="text" placeholder="Ім’я" required />
+            <input id="nameInput" type="text" placeholder="Ім’я" />
           </label>
         </div>
         <div>
           <label>Телефон
-            <input id="phoneInput" type="tel" placeholder="+380..." required />
+            <input id="phoneInput" type="tel" placeholder="+380..." />
           </label>
         </div>
+      </div>
+
+      <!-- Список бронювань (видно лише в адмін-режимі) -->
+      <div class="admin-list" id="adminList" style="display:none">
+        <h4>Бронювання на день (адмін)</h4>
+        <div id="adminRows"></div>
       </div>
 
       <div class="bar">
         <div class="left">
           <button class="btn danger" id="blockAllBtn">Заблокувати день</button>
           <button class="btn" id="unblockAllBtn">Розблокувати день</button>
-          <button class="btn" id="adminBlockRangeBtn">Заблокувати 45 хв від вибраного</button>
+          <button class="btn" id="adminBlockRangeBtn">Блок 45 хв від вибраного</button>
         </div>
         <div class="right">
           <button class="btn" id="closeBtn">Закрити</button>
@@ -119,182 +116,180 @@
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <script>
-    // ==== Конфіг (фіксовані значення) ====
-    const WORK_START = 8;       // 08:00
-    const WORK_END   = 20;      // 20:00
-    const SLOT_MINUTES = 15;    // внутрішній крок
-    const SERVICE_DURATION = 45;// хвилин
+    // ==== Конфіг ====
+    const WORK_START = 8, WORK_END = 20;
+    const SLOT_MINUTES = 15, SERVICE_DURATION = 45;
 
-    // ==== LocalStorage ====
-    const LS_KEY = 'blockedMinuteSlots_fixed45_v4';
-    function loadBlocked(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || {}; }catch{ return {}; } }
-    function saveBlocked(data){ localStorage.setItem(LS_KEY, JSON.stringify(data)); }
-    let blocked = loadBlocked();
+    // ==== DOM ====
+    const $ = (s)=>document.querySelector(s);
+    const modal = $('#modal'), slotsEl = $('#slots'), modalDateTitle = $('#modalDateTitle');
+    const adminToggle = $('#adminMode'), blockAllBtn = $('#blockAllBtn'), unblockAllBtn = $('#unblockAllBtn');
+    const adminBlockRangeBtn = $('#adminBlockRangeBtn'), bookBtn = $('#bookBtn'), closeBtn = $('#closeBtn');
+    const nameInput = $('#nameInput'), phoneInput = $('#phoneInput');
+    const adminList = $('#adminList'), adminRows = $('#adminRows'), clientForm = $('#clientForm');
+
+    // ==== Стан ====
+    let activeDateStr = null, selectedTime = null;
+    let ADMIN_KEY = sessionStorage.getItem('ADMIN_KEY') || null;
+    let dayBlocked = []; // ["HH:MM", ...]
+    let dayBookings = []; // [{time, name, phone} або {time, name:'Зайнято'}]
 
     // ==== Утиліти часу ====
-    const $ = sel => document.querySelector(sel);
-    function fmtDate(d){ return d.toISOString().slice(0,10); }
-    function toTime(h,m){ return h.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0'); }
+    function toTime(h,m){ return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`; }
     function parseTime(t){ const [hh,mm]=t.split(':').map(Number); return hh*60+mm; }
     function minutesToTime(min){ const h=Math.floor(min/60), m=min%60; return toTime(h,m); }
     function clampEnd(min){ return Math.min(min, WORK_END*60); }
-
-    function genSlots(step){
-      const slots = [];
-      for(let h=WORK_START; h<WORK_END; h++){
-        for(let m=0; m<60; m+=step){
-          slots.push(toTime(h,m));
-        }
-      }
-      return slots;
-    }
-    function getSlotsForDay(){ return genSlots(SLOT_MINUTES); }
-
-    // Генерує мітки часу в діапазоні [start; start+SERVICE_DURATION) з кроком SLOT_MINUTES
-    function rangeTimes(startTimeStr){
-      const step = SLOT_MINUTES;
+    function genSlots(step){ const out=[]; for(let h=WORK_START;h<WORK_END;h++) for(let m=0;m<60;m+=step) out.push(toTime(h,m)); return out; }
+    function rangeTimes(startTimeStr, dur = SERVICE_DURATION, step = SLOT_MINUTES){
       const startMin = parseTime(startTimeStr);
-      const hardEnd = clampEnd(startMin + SERVICE_DURATION);
-      let t = Math.ceil(startMin / step) * step;
+      const hardEnd = clampEnd(startMin + dur);
+      let t = Math.ceil(startMin/step)*step;
       const out = [];
       if (startMin >= WORK_START*60 && startMin < WORK_END*60) out.push(minutesToTime(startMin));
-      for (; t < hardEnd; t += step) {
-        if (t >= WORK_START*60 && t < WORK_END*60) {
-          const lbl = minutesToTime(t);
-          if (!out.includes(lbl)) out.push(lbl);
-        }
-      }
+      for (; t < hardEnd; t += step) if (t >= WORK_START*60 && t < WORK_END*60) out.push(minutesToTime(t));
       return out;
     }
 
-    function isRangeFree(dateStr, startTimeStr){
-      const need = rangeTimes(startTimeStr);
-      const list = blocked[dateStr] || [];
-      return need.every(t => !list.includes(t));
+    // ==== API (Netlify Functions) ====
+    const API_BASE = '/.netlify/functions';
+    async function api(path, { method='GET', data=null, admin=false } = {}){
+      const headers = { 'Content-Type':'application/json' };
+      if (admin && ADMIN_KEY) headers['X-Admin-Key'] = ADMIN_KEY;
+      const res = await fetch(`${API_BASE}${path}`, { method, headers, body: data ? JSON.stringify(data) : null });
+      const json = await res.json().catch(()=> ({}));
+      if (!res.ok) throw Object.assign(new Error(json.error || 'API error'), { status: res.status, json });
+      return json;
     }
-    function blockRange(dateStr, startTimeStr){
-      const need = rangeTimes(startTimeStr);
-      const list = blocked[dateStr] || [];
-      need.forEach(t => { if(!list.includes(t)) list.push(t); });
-      blocked[dateStr] = list.sort((a,b)=>parseTime(a)-parseTime(b));
-      saveBlocked(blocked);
-    }
-    function toggleMinute(dateStr, time){
-      const list = blocked[dateStr] || [];
-      const idx = list.indexOf(time);
-      if(idx>=0) list.splice(idx,1); else list.push(time);
-      if(list.length) blocked[dateStr] = list.sort((a,b)=>parseTime(a)-parseTime(b));
-      else delete blocked[dateStr];
-      saveBlocked(blocked);
+    async function loadDay(dateStr, asAdmin=false){
+      const headers = {};
+      if (asAdmin && ADMIN_KEY) headers['X-Admin-Key'] = ADMIN_KEY;
+      const url = new URL(`${API_BASE}/availability`, location.origin);
+      url.searchParams.set('date', dateStr);
+      const res = await fetch(url, { headers });
+      const json = await res.json().catch(()=> ({}));
+      if (!res.ok) throw new Error(json.error || 'availability error');
+      return json;
     }
 
-    // ==== Модалка ====
-    const modal = $('#modal');
-    const slotsEl = $('#slots');
-    const modalDateTitle = $('#modalDateTitle');
-    const adminToggle = $('#adminMode');
-    const blockAllBtn = $('#blockAllBtn');
-    const unblockAllBtn = $('#unblockAllBtn');
-    const adminBlockRangeBtn = $('#adminBlockRangeBtn');
-    const bookBtn = $('#bookBtn');
-    const closeBtn = $('#closeBtn');
-    const nameInput = $('#nameInput');
-    const phoneInput = $('#phoneInput');
+    // ==== Netlify Forms (для нотифікацій) ====
+    function encode(data){ return Object.keys(data).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(data[k])).join('&'); }
+    function isHttpOrigin(){ return location.protocol === 'http:' || location.protocol === 'https:'; }
+    async function submitBookingForm({ name, phone, date, time, duration }){
+      if(!isHttpOrigin()) return false; // у file:// не шлемо
+      const payload = { "form-name": "booking", name, phone, date, time, duration, "bot-field": "" };
+      const res = await fetch("/", { method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body: encode(payload) });
+      return res.ok;
+    }
 
-    let activeDateStr = null;
-    let selectedTime = null;
+    // ==== UI логіка ====
+    async function openModal(dateStr){
+      activeDateStr = dateStr; selectedTime = null;
+      nameInput.value = ''; phoneInput.value = '';
+      modalDateTitle.textContent = new Date(dateStr+"T12:00:00").toLocaleDateString('uk-UA', { day:'2-digit', month:'long', year:'numeric' });
 
-    function openModal(dateStr){
-      activeDateStr = dateStr;
-      selectedTime = null;
-      nameInput.value = '';
-      phoneInput.value = '';
-      modalDateTitle.textContent = new Date(dateStr + 'T12:00:00').toLocaleDateString('uk-UA', { day:'2-digit', month:'long', year:'numeric' });
+      try{
+        const asAdmin = adminToggle.checked;
+        const day = await loadDay(dateStr, asAdmin);
+        dayBlocked = Array.from(new Set([
+          ...(day.blocked||[]),
+          ...((day.bookings||[]).flatMap(b => rangeTimes(b.time))) // гарантуємо блок під бронювання
+        ])).sort((a,b)=>parseTime(a)-parseTime(b));
+        dayBookings = day.bookings || [];
+      }catch(e){
+        dayBlocked = []; dayBookings = [];
+        console.error(e);
+        alert('Не вдалося завантажити зайнятість дня');
+      }
+
       renderSlots(dateStr);
+      renderAdminList();
       modal.classList.add('open');
     }
     function closeModal(){ modal.classList.remove('open'); activeDateStr=null; selectedTime=null; }
 
     function renderSlots(dateStr){
       slotsEl.innerHTML = '';
-      const list = blocked[dateStr] || [];
-      const allSlots = getSlotsForDay();
+      const allSlots = genSlots(SLOT_MINUTES);
 
       allSlots.forEach(t=>{
+        const blockedSlot = dayBlocked.includes(t);
+        const fits = !rangeTimes(t).some(x => dayBlocked.includes(x));
         const btn = document.createElement('button');
-        const blockedSlot = list.includes(t);
-        const fits = isRangeFree(dateStr, t);
         btn.className = 'slot' + (blockedSlot ? ' blocked' : '') + (!fits ? ' notfit' : '');
         btn.textContent = t;
-        btn.dataset.time = t;
-
         btn.addEventListener('click', ()=>{
           if(adminToggle.checked){
-            if(fits){ blockRange(dateStr, t); } else { toggleMinute(dateStr, t); }
-            renderSlots(dateStr);
+            if(fits){ adminBlock(t); } else { /* адмін не перемикає точкові хвилини в цій версії */ }
           } else {
             if(blockedSlot || !fits) return;
             slotsEl.querySelectorAll('.slot').forEach(s=>s.classList.remove('selected'));
             btn.classList.add('selected');
             selectedTime = t;
-            adminBlockRangeBtn.disabled = !adminToggle.checked || !selectedTime;
           }
         });
-
         slotsEl.appendChild(btn);
       });
 
-      blockAllBtn.disabled = !adminToggle.checked;
-      unblockAllBtn.disabled = !adminToggle.checked;
-      adminBlockRangeBtn.disabled = !adminToggle.checked || !selectedTime;
-      bookBtn.textContent = adminToggle.checked ? 'Готово' : 'Підтвердити';
+      const isAdmin = adminToggle.checked;
+      blockAllBtn.disabled = !isAdmin;
+      unblockAllBtn.disabled = !isAdmin;
+      adminBlockRangeBtn.disabled = !isAdmin || !selectedTime;
+      clientForm.style.display = isAdmin ? 'none' : '';
+      adminList.style.display = isAdmin ? '' : 'none';
+      bookBtn.textContent = isAdmin ? 'Готово' : 'Підтвердити';
     }
 
-    blockAllBtn.addEventListener('click', ()=>{
-      if(!activeDateStr) return;
-      blocked[activeDateStr] = [...getSlotsForDay()];
-      saveBlocked(blocked);
-      renderSlots(activeDateStr);
-    });
-    unblockAllBtn.addEventListener('click', ()=>{
-      if(!activeDateStr) return;
-      delete blocked[activeDateStr];
-      saveBlocked(blocked);
-      renderSlots(activeDateStr);
-    });
-    adminBlockRangeBtn.addEventListener('click', ()=>{
-      if(!activeDateStr || !selectedTime) return;
-      if(!isRangeFree(activeDateStr, selectedTime)){
-        alert('Цей діапазон перетинається з зайнятими слотами');
+    function renderAdminList(){
+      if (!adminToggle.checked) return;
+      adminRows.innerHTML = '';
+      if (!dayBookings.length){
+        adminRows.innerHTML = '<div class="row"><span>Бронювань немає</span></div>';
         return;
       }
-      blockRange(activeDateStr, selectedTime);
-      renderSlots(activeDateStr);
+      dayBookings
+        .sort((a,b)=>parseTime(a.time)-parseTime(b.time))
+        .forEach(b=>{
+          const row = document.createElement('div');
+          row.className = 'row';
+          row.innerHTML = `<span>${b.time}</span><span>${b.name}${b.phone ? ' • ' + b.phone : ''}</span>`;
+          adminRows.appendChild(row);
+        });
+    }
+
+    // ==== Дії користувача / адміна ====
+    async function adminBlock(time){
+      if(!activeDateStr) return;
+      try{
+        await api('/book', { method:'POST', admin:true, data:{ date: activeDateStr, time, action:'admin-block' }});
+        await openModal(activeDateStr);
+      }catch(e){
+        alert(e?.json?.error || 'Не вдалося заблокувати');
+      }
+    }
+
+    blockAllBtn.addEventListener('click', async ()=>{
+      if(!activeDateStr) return;
+      try{
+        await api('/book', { method:'POST', admin:true, data:{ date: activeDateStr, action:'block-day' } });
+        await openModal(activeDateStr);
+      }catch(e){ alert('Не вдалося заблокувати день'); }
     });
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
 
-    // ---- Відправка у Netlify Forms
-    function encode(data){
-      return Object.keys(data)
-        .map((k) => encodeURIComponent(k) + "=" + encodeURIComponent(data[k]))
-        .join("&");
-    }
+    unblockAllBtn.addEventListener('click', async ()=>{
+      if(!activeDateStr) return;
+      try{
+        await api('/book', { method:'POST', admin:true, data:{ date: activeDateStr, action:'unblock-day' } });
+        await openModal(activeDateStr);
+      }catch(e){ alert('Не вдалося розблокувати день'); }
+    });
 
-    async function submitBooking({ name, phone, date, time, duration }){
-      const payload = {
-        "form-name": "booking",
-        name, phone, date, time, duration,
-        "bot-field": "" // honeypot
-      };
-      const res = await fetch("/", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: encode(payload)
-      });
-      if(!res.ok) throw new Error("Помилка відправки форми");
-      return true;
-    }
+    adminBlockRangeBtn.addEventListener('click', async ()=>{
+      if(!activeDateStr || !selectedTime) return;
+      try{
+        await api('/book', { method:'POST', admin:true, data:{ date: activeDateStr, time: selectedTime, action:'admin-block' } });
+        await openModal(activeDateStr);
+      }catch(e){ alert(e?.json?.error || 'Не вдалося заблокувати'); }
+    });
 
     bookBtn.addEventListener('click', async ()=>{
       if(adminToggle.checked){ closeModal(); return; }
@@ -302,34 +297,33 @@
       const name = (nameInput.value||'').trim();
       const phone = (phoneInput.value||'').trim();
       if(!name || !phone){ alert('Вкажіть ім’я та телефон'); return; }
-      if(!isRangeFree(activeDateStr, selectedTime)){
-        alert('Обраний проміжок вже недоступний, спробуйте інший час');
-        renderSlots(activeDateStr);
-        return;
-      }
 
-      // 1) Надіслати бронювання у Netlify Forms
+      // 1) бронювання на бекенді
       try{
-        await submitBooking({
-          name, phone,
-          date: activeDateStr,
-          time: selectedTime,
-          duration: SERVICE_DURATION + ' хв'
-        });
+        await api('/book', { method:'POST', data:{ date: activeDateStr, time: selectedTime, name, phone } });
       }catch(err){
-        console.error(err);
-        alert('Не вдалося надіслати форму. Спробуйте ще раз.');
-        return;
+        if (err.status === 409) { alert('Обраний проміжок вже недоступний. Оновіть список.'); await openModal(activeDateStr); return; }
+        alert('Помилка бронювання'); return;
       }
 
-      // 2) Автоблок інтервалу
-      blockRange(activeDateStr, selectedTime);
+      // 2) нотифікація через Netlify Forms (не критично)
+      try{ await submitBookingForm({ name, phone, date: activeDateStr, time: selectedTime, duration: '45 хв' }); }catch{}
 
-      alert(`Запис підтверджено:\n${activeDateStr} о ${selectedTime}\nІм’я: ${name}\nТелефон: ${phone}`);
+      alert(`Запис підтверджено: ${activeDateStr} о ${selectedTime}`);
       closeModal();
     });
 
-    // ==== Календар (без індикаторів у місяці) ====
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+
+    adminToggle.addEventListener('change', ()=>{
+      if (adminToggle.checked && !ADMIN_KEY) {
+        const k = prompt('Введіть адмін-ключ');
+        if (k) { ADMIN_KEY = k; sessionStorage.setItem('ADMIN_KEY', k); }
+      }
+    });
+
+    // ==== Календар ====
     const calendarEl = document.getElementById('calendar');
     const calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
@@ -341,13 +335,6 @@
       }
     });
     calendar.render();
-
-    // ==== Демо (можна прибрати) ====
-    if(Object.keys(blocked).length === 0){
-      const today = new Date();
-      const d1 = new Date(today); d1.setDate(today.getDate()+1);
-      blockRange(fmtDate(d1), '09:15'); // 45 хв
-    }
   </script>
 </body>
 </html>

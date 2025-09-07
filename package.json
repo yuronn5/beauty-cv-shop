@@ -1,15 +1,14 @@
 {
   "name": "amelie",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "netlify dev",
+    "start": "netlify dev",
+    "build": "echo \"No build step\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "nodemailer": "^7.0.5"
+    "@netlify/blobs": "^10.0.10"
   }
 }
