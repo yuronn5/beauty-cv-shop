@@ -1,5 +1,14 @@
 [build]
   functions = "netlify/functions"
 
+# Маршрути для Edge Function
+[[edge_functions]]
+  path = "/admin.html"
+  function = "admin-guard"
+
+[[edge_functions]]
+  path = "/admin*"
+  function = "admin-guard"
+
 [functions]
   node_bundler = "esbuild"
