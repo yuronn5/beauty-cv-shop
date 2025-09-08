@@ -1,0 +1,12 @@
+{
+  "name": "Amelie Admin",
+  "short_name": "Amelie Admin",
+  "start_url": "/admin.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    { "src": "/amelie/amelie/img/about/main-artist.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/amelie/amelie/img/about/main-artist.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
